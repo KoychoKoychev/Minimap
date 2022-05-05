@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./styles.css">
+    <script type="module">
+        //Initialise minimap and selected variables
+        let selectedLayer
+        let minimap = [];
+        let selectedTile
+
+        const miniMapContainer = document.getElementById('minimap');
+
+        // Selects a layer and saves it in selectedLayer variable
+
+        const layers = document.getElementsByClassName('layers')[0]
+
+        //Selects a tile
+
+        miniMapContainer.addEventListener('click', onSelectTile)
+
+        function onSelectTile(ev) {
+            if (ev.target.classList[0] === 'cell') {
+                selectedTile = ev.target.dataset.index
+                generateMap();
+            }
+        }
+        // Changes the layers of a selected tile
+
+        layers.addEventListener('click', onLayerChange)
+
+        function onLayerChange(ev) {
+            if (selectedTile) {
+                const [selectedX, selectedY] = selectedTile.split(',').map(Number)
+                const currentTile = minimap[selectedX][selectedY];
+                const currentLayer = ev.target.id;
+                if (currentLayer === 'grass' || currentLayer === 'sand') {
+                    if (currentTile === '') {
+                        minimap[selectedX][selectedY] += currentLayer
+                    }
+                    minimap[selectedX][selectedY] = minimap[selectedX][selectedY].replace(/sand|grass/, currentLayer)
+                }
+                if (currentLayer === 'barrel' || currentLayer === 'tree') {
+                    if (currentTile.includes('barrel') || currentTile.includes('tree')) {
+                        minimap[selectedX][selectedY] = minimap[selectedX][selectedY].replace(/barrel|tree/, currentLayer)
+                    } else if (currentTile.includes('sand') || currentTile.includes('grass')) {
+                        minimap[selectedX][selectedY] += ',' + currentLayer;
+                    }
+                }
+                generateMap();
+                console.log(minimap);
+            }
+        }
+
+
+        //Sets the size of the map
+        const mapSizeButton = document.getElementById('set_size')
+        mapSizeButton.addEventListener('click', onSetSize)
+
+        function onSetSize() {
+            let height = Number(document.getElementById('height').value);
+            let width = Number(document.getElementById('width').value);
+            let row = []
+            row.length = width;
+
+            //If no map is currently loaded generate an empty map based on the size input
+            if (minimap.length === 0) {
+                for (let i = 0; i < height; i++) {
+                    minimap[i] = [];
+                    for (let j = 0; j < width; j++) {
+                        minimap[i][j] = ''
+                    }
+                }
+            }
+
+            //Handle a change in the vertical dimension of the map
+            if (minimap.length < height) {
+                let currLen = minimap.length
+                for (let i = currLen; i < height; i++) {
+                    minimap[i] = [];
+                    for (let j = 0; j < width; j++) {
+                        minimap[i][j] = ''
+                    }
+                }
+            } else {
+                minimap.length = height;
+            }
+
+            //Handle a change in the horizontal dimension of the map
+            if (minimap[0].length > width) {
+                for (let row of minimap) {
+                    row.length = width;
+                }
+            } else {
+                for (let row of minimap) {
+                    let currLen = row.length
+                    row.length = width;
+                    row.fill('', currLen)
+                }
+            }
+
+            //Add the map to the DOM with its current size
+            generateMap();
+        }
+
+        //Generate map based on the minimap array
+
+        function generateMap() {
+            miniMapContainer.innerHTML = '';
+            let mapWidth = minimap[0] ? minimap[0].length : 0;
+            let mapHeight = minimap.length;
+            const [selectedX, selectedY] = selectedTile ? selectedTile.split(',').map(Number) : [null, null]
+
+            //Go through to map matrix and add each cell to the DOM
+            for (let i = 0; i < mapHeight; i++) {
+                //Create a row element base on the height of the map
+                const rowElement = document.createElement('div')
+                rowElement.classList.add('row')
+                for (let j = 0; j < mapWidth; j++) {
+                    //Create a cell element base on the width of the map
+                    const cellElement = document.createElement('div')
+                    cellElement.classList.add('cell')
+                    if (selectedX === i && selectedY === j) {
+                        cellElement.classList.add('selected')
+                    }
+                    cellElement.dataset.index = i.toString() + ',' + j.toString();
+                    let classes = minimap[i][j].split(',');
+                    classes.length > 0 && !classes.includes('') ? cellElement.classList.add(...classes) : null
+                    rowElement.appendChild(cellElement)
+                }
+                miniMapContainer.appendChild(rowElement);
+            }
+        }
+
+        //Sets the layer in current coordinates
+
+        miniMapContainer.addEventListener('click', onSetLayer)
+
+        function onSetLayer(ev) {
+            if (ev.target.classList[0] === 'cell') {
+                const [x, y] = ev.target.dataset.index.split(',').map(Number)
+                const currentCell = minimap[x][y];
+                if (selectedLayer === 'grass' || selectedLayer === 'sand') {
+                    if (!currentCell.includes('grass') && !currentCell.includes('sand')) {
+                        minimap[x][y] = selectedLayer;
+                        generateMap();
+                    }
+                };
+                if (selectedLayer === 'barrel' || selectedLayer === 'tree') {
+                    if (currentCell.includes('grass') || currentCell.includes('sand')) {
+                        minimap[x][y] = currentCell + ',' + selectedLayer;
+                        generateMap();
+                    }
+                }
+            }
+        }
+
+
+        //Export the current map 
+
+        const exportButton = document.getElementById('export_file');
+        exportButton.addEventListener('click', onExport)
+
+        function onExport() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(minimap));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", "map.json");
+            document.body.appendChild(downloadAnchorNode); // required for firefox
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+        }
+
+        //Import a created map
+
+        const importButton = document.getElementById('import_file');
+        importButton.addEventListener("change", onImport);
+
+        function onImport(ev) {
+            const map = ev.target.files[0];
+            const reader = new FileReader();
+            reader.readAsText(map, 'UTF-8');
+            reader.onload = readerEvent => {
+                const content = readerEvent.target.result;
+                minimap = JSON.parse(content);
+                document.getElementById('height').value = minimap.length;
+                document.getElementById('width').value = minimap[0] ? minimap[0].length : 0;
+                generateMap();
+            }
+        }
+    </script>
+    <title>MiniMap Generator</title>
+</head>
+
+<body>
+    <aside class="inline">
+        <h2>Controls</h2>
+        <div class="map_size">
+            <label>Height
+                <input type="number" id="height">
+            </label>
+            <label>Width
+                <input type="number" id="width">
+            </label>
+            <button id="set_size">SET SIZE</button>
+        </div>
+        <div class="layers">
+            <img src="./src/grass.png" alt="grass" id="grass">
+            <img src="./src/sand.png" alt="grass" id="sand">
+            <img src="./src/barrel.png" alt="grass" id="barrel">
+            <img src="./src/tree.png" alt="grass" id="tree">
+        </div>
+        <div class="file_system">
+            <button class="inline" id="export_file">Export Map</button>
+            <input class="inline" type="file" id="import_file">
+        </div>
+    </aside>
+    <main>
+        <h2>Minimap</h2>
+        <div class="minimap" id="minimap">
+        </div>
+    </main>
+</body>
+
+</html>

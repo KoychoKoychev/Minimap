@@ -1,0 +1,73 @@
+.map_size {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.map_size>* {
+    margin: 8px 0px;
+}
+
+.layers img.selected {
+    border: 2px solid red;
+}
+
+.layers img{
+   margin: 16px 8px;
+}
+
+.minimap {
+    background-color: lightgray;
+    display: inline-block;
+    vertical-align: top;
+}
+
+main{
+    display: inline-block;
+    width: 60vw;
+    vertical-align: top;
+}
+
+.inline {
+    display: inline-block;
+}
+
+.minimap .row {
+    height: 52px;
+}
+
+.minimap .cell {
+    border: 1px solid black;
+    display: inline-block;
+    height: 50px;
+    width: 50px;
+    background-size: cover;
+}
+
+.minimap .selected {
+    border: 1px solid red;
+}
+
+.minimap .cell.sand {
+    background-image: url('./src/sand.png');
+}
+
+.minimap .cell.grass {
+    background-image: url('./src/grass.png');
+}
+
+.minimap .cell.sand.barrel {
+    background-image: url('./src/barrel.png'), url('./src/sand.png');
+}
+
+.minimap .cell.sand.tree {
+    background-image: url('./src/tree.png'), url('./src/sand.png');
+}
+
+.minimap .cell.grass.barrel {
+    background-image: url('./src/barrel.png'), url('./src/grass.png');
+}
+
+.minimap .cell.grass.tree {
+    background-image: url('./src/tree.png'), url('./src/grass.png');
+}
